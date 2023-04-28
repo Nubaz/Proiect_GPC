@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Proiect Grafica Pe Calculator
 * UNIBUC, FMI, CTI, Anul III, Grupa 361
 * Croitoru Eduard-Adrian
@@ -14,42 +14,42 @@
 using namespace std;
 
 double idxGropi = 0.;
-double viteza = 2.;
+double viteza = 7.;
 double fazaFar = 1.;
 double sirena = 0.5;
+bool changeSeed = false;
+GLuint listaVitezometru;
+const double TWO_PI = 6.2831853;
+double acVit = 60.0;
 
 double xcar = 0., ycar = 0.;
 // unde se va opri masina pe axa x, cand face schimbarea de benzi
 double xFinal = 100;
 double j = 1.0;
 GLsizei winWidth = 500, winHeight = 500;
-GLuint traficID;
-static GLfloat rotTheta = 0.0;
 
 class scrPt {
 	public:
-		GLfloat x, y, z;
-
-		void print(const char* text = " ") {
-			cout << text << ' ' << x << ' ' << y << ' ' << z << endl;
-		}
-
-		scrPt operator + (scrPt const& a) {
-			scrPt res;
-			res.x = x + a.x;
-			res.y = y + a.y;
-			res.z = z + a.z;
-			return res;
-		}
-
-		scrPt operator - (scrPt const& a) {
-			scrPt res;
-			res.x = x - a.x;
-			res.y = y - a.y;
-			res.z = z - a.z;
-			return res;
-		}
+		GLfloat x, y;
 };
+
+void drawCircle(GLuint regHex, int x, int y, int size, double RGB[3]) {
+	scrPt hexVertex;
+	GLdouble hexTheta;
+	GLint k;
+
+	glNewList(regHex, GL_COMPILE);
+		glColor3f(RGB[0], RGB[1], RGB[2]);
+		glBegin(GL_POLYGON);
+			for (k = 0; k < 5000; k++) {
+				hexTheta = TWO_PI * k / 5000;
+				hexVertex.x = x + size * cos(hexTheta);
+				hexVertex.y = y + size * sin(hexTheta);
+				glVertex2i(hexVertex.x, hexVertex.y);
+			}
+		glEnd();
+	glEndList();
+}
 
 void funcTranzitii(void) {
 	// Girofar
@@ -64,27 +64,19 @@ void funcTranzitii(void) {
 	glutPostRedisplay();
 }
 
-static void init(void) {
-	scrPt cerc;
-	GLdouble theta;
-	GLint aux;
-	GLint n = 2000;
+void changeGropi(void) {
+	srand(time(NULL));
+}
 
-	// 159 / 255 , 61 / 255 , 0 , 1
+static void init(void) {
+	// Culoarea spatiului nedefinit
 	glClearColor(0.6235294, 0.239215, 0, 1);
 	gluOrtho2D(-100, 100, -100, 100);
 
-	traficID = glGenLists(1);
-
-	for (aux = 0; aux < 20; aux++)
-	{
-		glColor3f(0, 1, 0);
-		glRectf(20, 100 + aux * 20, 60, 160 + aux * 20);
-
-		glColor3f(0.5, 0, 0.5);
-		glRectf(-120, 250 + aux * 20, -80, 310 + aux * 20);
-	}
-	glEndList();
+	// Amplasarea vitezometrului
+	listaVitezometru = glGenLists(1);
+	double RGB[3] = { 1.0, 1.0, 1.0 };
+	drawCircle(listaVitezometru, 177, 177, 70, RGB);
 
 	// Opacitatea culorilor
 	glEnable(GL_BLEND);
@@ -96,6 +88,7 @@ void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 		case 'w':
 			ycar += 5;
+			if (ycar > 335) ycar = 335;
 			break;
 		case 'a':
 			xcar -= 5;
@@ -103,6 +96,7 @@ void keyboard(unsigned char key, int x, int y) {
 			break;
 		case 's':
 			ycar -= 5;
+			if (ycar < -65) ycar = -65;
 			break;
 		case 'd':
 			xcar += 5;
@@ -116,6 +110,23 @@ void keyboard(unsigned char key, int x, int y) {
 		case 'g':
 			if (sirena == 0.5) sirena = 0.;
 			else sirena = 0.5;
+			break;
+		case 'k':
+			viteza += 5.;
+			acVit -= 15.;
+			if(acVit <= -90.) {
+				viteza = 90.;
+				acVit = -90.;
+			}
+			break;
+		case 'l':
+			viteza -= 5.;
+			acVit += 15.;
+			if(acVit >= 90.) {
+				viteza = 0.;
+				acVit = 90.;
+			}
+			break;
 		default:
 			break;
 	}
@@ -133,7 +144,7 @@ void genGroapa(int origx, int origy) {
 }
 
 void desenDrum(void) {
-	srand(2);
+	changeGropi();
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -150,8 +161,9 @@ void desenDrum(void) {
 	// Gropi
 	glPushMatrix();
 	glTranslated(0, idxGropi, 0);
-	genGroapa(20, 20);
-	genGroapa(-200, 100);
+	genGroapa(20, 120);
+	genGroapa(-200, -50);
+	genGroapa(-200, 200);
 
 	// Initializare pentru tranzitii
 	glPopMatrix();
@@ -160,6 +172,12 @@ void desenDrum(void) {
 	// ----- MASINA DE POLITIE -----
 	// Sasiu
 	glColor3f(0, 0, 0);
+	/*glBegin(GL_POLYGON);
+		glVertex2i(20, -180);
+		glVertex2i(80, -180);
+		glVertex2i(70, -165);
+		glVertex2i(30, -165);
+	glEnd();*/
 	glRectf(20, -180, 80, -155);
 	glColor3f(1, 1, 1);
 	glRectf(20, -155, 80, -115);
@@ -212,10 +230,26 @@ void desenDrum(void) {
 	glEnd();
 
 	glPopMatrix();
-	glPopMatrix();
 
 	// Incrementare pentru girofar si alte translatii
 	glutIdleFunc(funcTranzitii);
+
+	// ----- VITEZOMETRU -----
+	// Cercul si initializarea animatiilor
+	glLoadIdentity();
+	glCallList(listaVitezometru);
+	glPushMatrix();
+	glTranslated(177, 177, 0);
+	glRotated(acVit, 0, 0, 1);
+	glTranslated(-177, -177, 0);
+
+	// Acul
+	glColor3f(1.0, 0.0, 0.0);
+	glLineWidth(7.0);
+	glBegin(GL_LINES);
+		glVertex2f(177, 177);
+		glVertex2f(177, 237);
+	glEnd();
 
 	glutSwapBuffers();
 	glFlush();
