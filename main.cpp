@@ -13,103 +13,103 @@
 
 using namespace std;
 
-double idxGropi = 0.;
-double viteza = 7.;
-double fazaFar = 1.;
-double sirena = 0.5;
-bool changeSeed = false;
+GLfloat idxGropi = 0.;
+GLfloat viteza = 7.;
+GLfloat fazaFar = 1.;
+GLfloat sirena = 0.5;
 GLuint listaVitezometru;
-const double TWO_PI = 6.2831853;
-double acVit = 60.0;
+const GLfloat TWO_PI = (GLfloat)6.2831853;
+GLfloat acVit = 60.0;
+GLdouble scaleFactor = 1;
 
-double xcar = 0., ycar = 0.;
-// unde se va opri masina pe axa x, cand face schimbarea de benzi
-double xFinal = 100;
-double j = 1.0;
-GLsizei winWidth = 500, winHeight = 500;
+GLint xcar = -110, ycar = -150;
+GLfloat j = 1.0;
+GLsizei winWidth = 800, winHeight = 600;
 
 class scrPt {
 	public:
 		GLfloat x, y;
 };
 
-void drawCircle(GLuint regHex, int x, int y, int size, double RGB[3]) {
-	scrPt hexVertex;
-	GLdouble hexTheta;
+void drawCircle(GLuint regHex, int x, int y, int size, GLfloat RGB[3]) {
+	scrPt vertex;
+	GLfloat theta;
 	GLint k;
-
+	
 	glNewList(regHex, GL_COMPILE);
 		glColor3f(RGB[0], RGB[1], RGB[2]);
 		glBegin(GL_POLYGON);
 			for (k = 0; k < 5000; k++) {
-				hexTheta = TWO_PI * k / 5000;
-				hexVertex.x = x + size * cos(hexTheta);
-				hexVertex.y = y + size * sin(hexTheta);
-				glVertex2i(hexVertex.x, hexVertex.y);
+				theta = TWO_PI * k / 5000;
+				vertex.x = x + size * cos(theta);
+				vertex.y = y + size * sin(theta);
+				glVertex2f(vertex.x, vertex.y);
 			}
 		glEnd();
 	glEndList();
 }
 
 void funcTranzitii(void) {
-	// Girofar
-	j += 10;
-
-	// Gropi
-	idxGropi -= viteza;
-	if (idxGropi < -500.) {
-		idxGropi = 500.;
-	}
-
 	glutPostRedisplay();
-}
-
-void changeGropi(void) {
-	srand(time(NULL));
 }
 
 static void init(void) {
 	// Culoarea spatiului nedefinit
-	glClearColor(0.6235294, 0.239215, 0, 1);
-	gluOrtho2D(-100, 100, -100, 100);
+	glClearColor((GLclampf)0.6235294, (GLclampf)0.239215, (GLclampf)0, (GLclampf)1);
+	gluOrtho2D(-winWidth / 2, winWidth / 2, -winHeight / 2, winHeight / 2);
 
 	// Amplasarea vitezometrului
 	listaVitezometru = glGenLists(1);
-	double RGB[3] = { 1.0, 1.0, 1.0 };
+	GLfloat RGB[3] = { 1.0, 1.0, 1.0 };
 	drawCircle(listaVitezometru, 177, 177, 70, RGB);
 
 	// Opacitatea culorilor
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
 
+GLfloat margine(GLfloat x, GLfloat y, int semn) {
+	if (semn == -1) return y -  1.125 * x - 278.125; // Marginea stanga
+	else return y + 1.125 * x - 143.125; // Marginea dreapta
 }
 
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 		case 'w':
-			ycar += 5;
-			if (ycar > 335) ycar = 335;
-			break;
-		case 'a':
-			xcar -= 5;
-			if (xcar < -220) xcar = -220;
+			/*if (margine(xcar, ycar + 5, -1) <= 0 && margine(xcar + 100, ycar + 5, 1) <= 0) {
+				ycar += 5;
+				scaleFactor -= 0.1;
+			}
+			if (margine(xcar, ycar + 5, -1) > 0) {
+				xcar += 5;
+				ycar += 5;
+				scaleFactor -= 0.1;
+			}
+			if (margine(xcar + 100, ycar + 5, 1) > 0) {
+				xcar -= 5;
+				ycar += 5;
+				scaleFactor -= 0.1;
+			}
+			if (ycar > 70)
+				ycar = 70;*/
+			scaleFactor -= 0.1;
 			break;
 		case 's':
-			ycar -= 5;
-			if (ycar < -65) ycar = -65;
+			/*if (margine(xcar, ycar - 5, -1) <= 0 && margine(xcar + 100, ycar - 5, 1) <= 0) {
+				ycar -= 5;
+				scaleFactor += 0.1;
+			}
+			if (ycar < -200)
+				ycar = -200;*/
+			scaleFactor += 0.1;
+			break;
+		case 'a':
+			if(margine(xcar - 5, ycar / scaleFactor, -1) <= 0)
+				xcar -= 5;
 			break;
 		case 'd':
-			xcar += 5;
-			if (xcar > 120) xcar = 120;
-			break;
-		case 'f':
-			if (fazaFar - 0.2 <= 0.) fazaFar = -1.;
-			else fazaFar -= 0.2;
-			if (fazaFar == -1.) fazaFar = 1.;
-			break;
-		case 'g':
-			if (sirena == 0.5) sirena = 0.;
-			else sirena = 0.5;
+			if (margine(xcar + 105, ycar / scaleFactor, 1) <= 0)
+				xcar += 5;
 			break;
 		case 'k':
 			viteza += 5.;
@@ -132,112 +132,58 @@ void keyboard(unsigned char key, int x, int y) {
 	}
 }
 
-void genGroapa(int origx, int origy) {
-	int range = 100, min = 0, nrVf = rand() % 10 + 4;
-
-	glColor3f(0.2, 0.2, 0.2);
+// idee scalare : adaugat / scazut aceeasi val. la bmare, bmica si h
+void drawTrapez(int x, int y, int bmare, int bmica, int h) {
 	glBegin(GL_POLYGON);
-		for (int iter = 0; iter < nrVf; iter++) {
-			glVertex2i(rand() % range + min + origx, rand() % range + min + origy);
-		}
+		glVertex2i(x, y);
+		glVertex2i(x + bmare, y);
+		glVertex2i(x + bmare - (bmare - bmica) / 2, y + h);
+		glVertex2i(x + (bmare - bmica) / 2, y + h);
 	glEnd();
 }
 
 void desenDrum(void) {
-	changeGropi();
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	// Incrementare pentru girofar si alte translatii
+	glutIdleFunc(funcTranzitii);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	// ----- DRUMUL -----
-	glColor3f(0.3, 0.3, 0.3);
-	glRectf(-200., -1000., 200., 1000.);
+	// Drumul efectiv
+	glColor3f((GLfloat)0.3, (GLfloat)0.3, (GLfloat)0.3);
+	drawTrapez(-450, -400, 900, 200, 400);
 
-	// Linia ce separa benzile
-	glColor3f(1, 1, 1);
-	glRectf(-10., -1000., 10., 1000.);
+	// Linia care separa benzile
+	glColor3f((GLfloat)1, (GLfloat)1, (GLfloat)1);
+	drawTrapez(-40, -400, 90, 20, 400);
 
-	// Gropi
-	glPushMatrix();
-	glTranslated(0, idxGropi, 0);
-	genGroapa(20, 120);
-	genGroapa(-200, -50);
-	genGroapa(-200, 200);
+	// ----- CERUL -----
+	glColor3f((GLfloat)0, (GLfloat)0, (GLfloat)0.7);
+	glRecti(-450, -30, 900, 700);
 
 	// Initializare pentru tranzitii
-	glPopMatrix();
+	glPushMatrix();
+	glScaled(scaleFactor, scaleFactor, 0);
 	glTranslated(xcar, ycar, 0);
 
-	// ----- MASINA DE POLITIE -----
+	// ----- MASINA -----
 	// Sasiu
-	glColor3f(0, 0, 0);
-	/*glBegin(GL_POLYGON);
-		glVertex2i(20, -180);
-		glVertex2i(80, -180);
-		glVertex2i(70, -165);
-		glVertex2i(30, -165);
-	glEnd();*/
-	glRectf(20, -180, 80, -155);
-	glColor3f(1, 1, 1);
-	glRectf(20, -155, 80, -115);
-	glColor3f(0, 0, 0);
-	glRectf(20, -115, 80, -90);
+	glColor3f((GLfloat)0, (GLfloat)0, (GLfloat)0);
+	drawTrapez(60, -100, 100, 80, 40);
 
-	// Stopuri
-	glColor3f(1, 0, 0);
-	glRectf(25, -185, 35, -180);
-	glColor3f(1, 0, 0);
-	glRectf(65, -185, 75, -180);
-
-	// Faruri
-	glColor3f(0.8, 0.5, 0);
-	glRectf(25, -90, 35, -85);
-	glColor3f(0.8, 0.5, 0);
-	glRectf(65, -90, 75, -85);
-
-	glColor4f(1, 1, 0, fazaFar);
-	glBegin(GL_TRIANGLES);
-		glVertex2f(30, -85);
-		glVertex2f(0, 0);
-		glVertex2f(60, 0);
-
-		glVertex2f(40, 0);
-		glVertex2f(100, 0);
-		glVertex2f(70, -85);
-	glEnd();
-
-
-	// ----- GIROFAR -----
-	// Animatie
-	glTranslated(50, -135, 0);
-	glRotated(j, 0, 0, 1);
-	glTranslated(-50, 135, 0);
-
-	// Girofarul efectiv
-	glColor4f(1, 0, 0, sirena);
-	glBegin(GL_TRIANGLES);
-		glVertex2f(10, -115);
-		glVertex2f(50, -135);
-		glVertex2f(10, -155);
-	glEnd();
-
-	glColor4f(0, 0, 1, sirena);
-	glBegin(GL_TRIANGLES);
-		glVertex2f(50, -135);
-		glVertex2f(90, -115);
-		glVertex2f(90, -155);
-	glEnd();
-
-	glPopMatrix();
-
-	// Incrementare pentru girofar si alte translatii
-	glutIdleFunc(funcTranzitii);
+	// Geam spate
+	glColor3f((GLfloat)0, (GLfloat)0.3, (GLfloat)0.6);
+	drawTrapez(70, -60, 80, 60, 20);
 
 	// ----- VITEZOMETRU -----
-	// Cercul si initializarea animatiilor
+	// Vitezometrul efectiv
 	glLoadIdentity();
 	glCallList(listaVitezometru);
+
+	// Animatia vitezometrului
 	glPushMatrix();
 	glTranslated(177, 177, 0);
 	glRotated(acVit, 0, 0, 1);
@@ -260,7 +206,8 @@ void winReshapeFcn(GLint newWidth, GLint newHeight) {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluOrtho2D(-250.0, 250.0, -250.0, 250.0);
+
+	gluOrtho2D(-winWidth / 2, winWidth / 2, -winHeight /2, winHeight / 2);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -268,7 +215,7 @@ void winReshapeFcn(GLint newWidth, GLint newHeight) {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowPosition(150, 150);
